@@ -55,8 +55,13 @@ public class DefaultErrorMessages {
     }
 
     @Nullable
+    public static DiagnosticRenderer getRendererForDiagnostic(@NotNull Diagnostic diagnostic, @NotNull Boolean isDebugMode) {
+        return AddToStdlibKt.firstNotNullResult(RENDERER_MAPS, map -> map.get(diagnostic.getFactory(), isDebugMode));
+    }
+
+    @Nullable
     public static DiagnosticRenderer getRendererForDiagnostic(@NotNull Diagnostic diagnostic) {
-        return AddToStdlibKt.firstNotNullResult(RENDERER_MAPS, map -> map.get(diagnostic.getFactory()));
+        return getRendererForDiagnostic(diagnostic, false);
     }
 
     static {

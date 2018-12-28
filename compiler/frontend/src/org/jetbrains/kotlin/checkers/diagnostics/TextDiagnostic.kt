@@ -142,7 +142,7 @@ class TextDiagnostic(
         private fun asTextDiagnostic(actualDiagnostic: ActualDiagnostic): TextDiagnostic {
             val diagnostic = actualDiagnostic.diagnostic
 
-            val renderer = DefaultErrorMessages.getRendererForDiagnostic(diagnostic)
+            val renderer = DefaultErrorMessages.getRendererForDiagnostic(diagnostic, true)
             val diagnosticName = actualDiagnostic.name
             if (renderer is AbstractDiagnosticWithParametersRenderer) {
                 val renderParameters = renderer.renderParameters(diagnostic)

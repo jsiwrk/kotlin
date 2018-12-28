@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.config.LanguageVersionSettingsImpl
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
 import org.jetbrains.kotlin.diagnostics.*
 import org.jetbrains.kotlin.load.java.InternalFlexibleTypeTransformer
 import org.jetbrains.kotlin.name.FqName
@@ -46,6 +47,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.MultiTargetPlatform
 import org.jetbrains.kotlin.test.KotlinTestUtils
+import org.jetbrains.kotlin.tests.di.createContainerForTests
 import org.jetbrains.kotlin.utils.addIfNotNull
 import org.junit.Assert
 import java.io.File
@@ -132,8 +134,8 @@ abstract class BaseDiagnosticsTest : KotlinMultiFileTestWithJava<TestModule, Tes
         textWithMarkers: String,
         val directives: Map<String, String>
     ) {
-        private val diagnosedRanges: List<DiagnosedRange> = ArrayList()
-        val actualDiagnostics: MutableList<ActualDiagnostic> = ArrayList()
+        private val diagnosedRanges: MutableList<DiagnosedRange> = mutableListOf()
+        val actualDiagnostics: MutableList<ActualDiagnostic> = mutableListOf()
         val expectedText: String
         val clearText: String
         private val createKtFile: Lazy<KtFile?>
@@ -144,7 +146,7 @@ abstract class BaseDiagnosticsTest : KotlinMultiFileTestWithJava<TestModule, Tes
         val declareFlexibleType: Boolean
         val checkLazyLog: Boolean
         private val markDynamicCalls: Boolean
-        val dynamicCallDescriptors: List<DeclarationDescriptor> = ArrayList()
+        val dynamicCallDescriptors: MutableList<DeclarationDescriptor> = mutableListOf()
         val withNewInferenceDirective: Boolean
         val newInferenceEnabled: Boolean
         val renderDiagnosticMessages: Boolean
@@ -223,7 +225,9 @@ abstract class BaseDiagnosticsTest : KotlinMultiFileTestWithJava<TestModule, Tes
             bindingContext: BindingContext,
             implementingModulesBindings: List<Pair<MultiTargetPlatform, BindingContext>>,
             actualText: StringBuilder,
-            skipJvmSignatureDiagnostics: Boolean
+            skipJvmSignatureDiagnostics: Boolean,
+            languageVersionSettings: LanguageVersionSettings,
+            moduleDescriptor: ModuleDescriptorImpl
         ): Boolean {
             val ktFile = this.ktFile
             if (ktFile == null) {
@@ -242,12 +246,18 @@ abstract class BaseDiagnosticsTest : KotlinMultiFileTestWithJava<TestModule, Tes
 
             val ok = booleanArrayOf(true)
             val withNewInference = newInferenceEnabled && withNewInferenceDirective && !USE_OLD_INFERENCE_DIAGNOSTICS_FOR_NI
-            val diagnostics = ContainerUtil.filter(
+            val container = createContainerForTests(project, KotlinTestUtils.createEmptyModule())
+            val diagnostics =
                 CheckerTestUtil.getDiagnosticsIncludingSyntaxErrors(
-                    bindingContext, implementingModulesBindings, ktFile, markDynamicCalls, dynamicCallDescriptors, newInferenceEnabled
-                ) + jvmSignatureDiagnostics,
+                    bindingContext, implementingModulesBindings, ktFile, markDynamicCalls, dynamicCallDescriptors, newInferenceEnabled,
+                languageVersionSettings,
+                container.dataFlowValueFactory,
+                moduleDescriptor
+            ).run {
+                ContainerUtil.filter(
+                    this + jvmSignatureDiagnostics,
                 { whatDiagnosticsToConsider.value(it.diagnostic) }
-            )
+            )}
 
             actualDiagnostics.addAll(diagnostics)
 

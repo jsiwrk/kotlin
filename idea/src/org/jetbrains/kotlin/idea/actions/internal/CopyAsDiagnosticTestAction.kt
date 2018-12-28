@@ -21,6 +21,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import org.jetbrains.kotlin.checkers.utils.CheckerTestUtil
+import org.jetbrains.kotlin.config.LanguageVersionSettingsImpl
 import org.jetbrains.kotlin.idea.caches.resolve.*
 import org.jetbrains.kotlin.psi.KtFile
 import java.awt.*
@@ -40,7 +41,10 @@ class CopyAsDiagnosticTestAction : AnAction() {
             false,
             mutableListOf(),
             null,
-            false
+            false,
+            LanguageVersionSettingsImpl.DEFAULT,
+            null,
+            null
         )
         val result = CheckerTestUtil.addDiagnosticMarkersToText(psiFile, diagnostics).toString()
 
