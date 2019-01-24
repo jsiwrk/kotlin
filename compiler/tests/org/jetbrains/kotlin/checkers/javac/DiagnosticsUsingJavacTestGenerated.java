@@ -23048,6 +23048,16 @@ public class DiagnosticsUsingJavacTestGenerated extends AbstractDiagnosticsUsing
                 runTest("compiler/testData/diagnostics/tests/when/NonExhaustiveWithNullabilityCheck.kt");
             }
 
+            @TestMetadata("nonexhaustiveWhenCoercedToUnit_after.kt")
+            public void testNonexhaustiveWhenCoercedToUnit_after() throws Exception {
+                runTest("compiler/testData/diagnostics/tests/when/nonexhaustiveWhenCoercedToUnit_after.kt");
+            }
+
+            @TestMetadata("nonexhaustiveWhenCoercedToUnit_before.kt")
+            public void testNonexhaustiveWhenCoercedToUnit_before() throws Exception {
+                runTest("compiler/testData/diagnostics/tests/when/nonexhaustiveWhenCoercedToUnit_before.kt");
+            }
+
             @TestMetadata("PropertyNotInitialized.kt")
             public void testPropertyNotInitialized() throws Exception {
                 runTest("compiler/testData/diagnostics/tests/when/PropertyNotInitialized.kt");

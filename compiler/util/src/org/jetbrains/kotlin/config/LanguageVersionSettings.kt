@@ -96,6 +96,7 @@ enum class LanguageFeature(
     ProhibitConcurrentHashMapContains(KOTLIN_1_4, kind = BUG_FIX),
     ProhibitTypeParametersForLocalVariables(KOTLIN_1_4, kind = BUG_FIX),
     ProhibitJvmOverloadsOnConstructorsOfAnnotationClasses(KOTLIN_1_4, kind = BUG_FIX),
+    CoerceNonExhaustiveWhenToUnit(KOTLIN_1_4, kind = UNSTABLE_FEATURE), // TODO should it work in the progressive mode?
 
     ProperVisibilityForCompanionObjectInstanceField(sinceVersion = null, kind = BUG_FIX),
     // Temporarily disabled, see KT-27084/KT-22379

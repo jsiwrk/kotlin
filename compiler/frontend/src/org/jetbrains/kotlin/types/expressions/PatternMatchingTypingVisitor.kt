@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.TypeUtils.NO_EXPECTED_TYPE
+import org.jetbrains.kotlin.types.TypeUtils.noExpectedType
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
 import org.jetbrains.kotlin.types.expressions.ControlStructureTypingUtils.*
 import org.jetbrains.kotlin.types.expressions.typeInfoFactory.createTypeInfo
@@ -212,7 +213,7 @@ class PatternMatchingTypingVisitor internal constructor(facade: ExpressionTyping
 
         val possibleTypesForSubject =
             subject.typeInfo?.dataFlowInfo?.getStableTypes(subject.dataFlowValue, components.languageVersionSettings)
-                    ?: emptySet()
+                ?: emptySet()
         checkSmartCastsInSubjectIfRequired(expression, contextBeforeSubject, subject.type, possibleTypesForSubject)
 
         val dataFlowInfoForEntries = analyzeConditionsInWhenEntries(expression, contextAfterSubject, subject)
@@ -245,7 +246,26 @@ class PatternMatchingTypingVisitor internal constructor(facade: ExpressionTyping
         }
 
         val branchesType = branchesTypeInfo.type ?: return noTypeInfo(resultDataFlowInfo)
-        val resultType = components.dataFlowAnalyzer.checkType(branchesType, expression, contextWithExpectedType)
+
+        val coercedType =
+            if (
+                !isExhaustive && expression.elseExpression == null &&
+                (noExpectedType(contextWithExpectedType.expectedType) ||
+                        KotlinTypeChecker.DEFAULT.isSubtypeOf(components.builtIns.unitType, contextWithExpectedType.expectedType))
+            )
+                components.builtIns.unitType.also {
+                    trace.record(BindingContext.COERCED_WHEN_EXPRESSION_TYPE, expression, it)
+                }
+            else
+                branchesType
+
+        val possiblyCoercedType =
+            if (components.languageVersionSettings.supportsFeature(LanguageFeature.CoerceNonExhaustiveWhenToUnit))
+                coercedType
+            else
+                branchesType
+
+        val resultType = components.dataFlowAnalyzer.checkType(possiblyCoercedType, expression, contextWithExpectedType)
 
         return createTypeInfo(resultType, resultDataFlowInfo, branchesTypeInfo.jumpOutPossible, contextWithExpectedType.dataFlowInfo)
     }
@@ -279,7 +299,7 @@ class PatternMatchingTypingVisitor internal constructor(facade: ExpressionTyping
             ExpressionTypingUtils.newWritableScopeImpl(contextBeforeSubject, LexicalScopeKind.WHEN, components.overloadChecker)
 
         val (typeInfo, descriptor) =
-                components.localVariableResolver.process(subjectVariable, contextBeforeSubject, contextBeforeSubject.scope, facade)
+            components.localVariableResolver.process(subjectVariable, contextBeforeSubject, contextBeforeSubject.scope, facade)
 
         scopeWithSubjectVariable.addVariableDescriptor(descriptor)
 
@@ -387,11 +407,11 @@ class PatternMatchingTypingVisitor internal constructor(facade: ExpressionTyping
                 }
 
             currentDataFlowInfo =
-                    when {
-                        entryType != null && KotlinBuiltIns.isNothing(entryType) -> currentDataFlowInfo
-                        currentDataFlowInfo != null -> currentDataFlowInfo.or(entryDataFlowInfo)
-                        else -> entryDataFlowInfo
-                    }
+                when {
+                    entryType != null && KotlinBuiltIns.isNothing(entryType) -> currentDataFlowInfo
+                    currentDataFlowInfo != null -> currentDataFlowInfo.or(entryDataFlowInfo)
+                    else -> entryDataFlowInfo
+                }
 
             jumpOutPossible = jumpOutPossible or entryTypeInfo.jumpOutPossible
         }

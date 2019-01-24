@@ -16,7 +16,6 @@
 
 package org.jetbrains.kotlin.psi2ir.generators
 
-import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.buildStatement
 import org.jetbrains.kotlin.ir.builders.irIfThenMaybeElse
@@ -101,17 +100,11 @@ class BranchingExpressionGenerator(statementGenerator: StatementGenerator) : Sta
     fun generateWhenExpression(expression: KtWhenExpression): IrExpression {
         val irSubject = generateWhenSubject(expression)
 
-        val inferredType = getInferredTypeWithImplicitCastsOrFail(expression)
+        val coercedType = get(BindingContext.COERCED_WHEN_EXPRESSION_TYPE, expression)
+            ?: getInferredTypeWithImplicitCasts(expression)
+            ?: context.builtIns.unitType
 
-        // TODO relies on ControlFlowInformationProvider, get rid of it
-        val isUsedAsExpression = get(BindingContext.USED_AS_EXPRESSION, expression) ?: false
-        val isExhaustive = expression.isExhaustiveWhen()
-
-        val resultType = when {
-            isUsedAsExpression -> inferredType.toIrType()
-            KotlinBuiltIns.isNothing(inferredType) -> inferredType.toIrType()
-            else -> context.irBuiltIns.unitType
-        }
+        val resultType = coercedType.toIrType()
 
         val irWhen = IrWhenImpl(expression.startOffsetSkippingComments, expression.endOffset, resultType, IrStatementOrigin.WHEN)
 

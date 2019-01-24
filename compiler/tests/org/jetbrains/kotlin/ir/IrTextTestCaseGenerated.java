@@ -982,6 +982,11 @@ public class IrTextTestCaseGenerated extends AbstractIrTextTestCase {
             runTest("compiler/testData/ir/irText/expressions/kt28456b.kt");
         }
 
+        @TestMetadata("kt29452.kt")
+        public void testKt29452() throws Exception {
+            runTest("compiler/testData/ir/irText/expressions/kt29452.kt");
+        }
+
         @TestMetadata("lambdaInCAO.kt")
         public void testLambdaInCAO() throws Exception {
             runTest("compiler/testData/ir/irText/expressions/lambdaInCAO.kt");
