@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.idea.intentions
 import com.intellij.codeInsight.intention.HighPriorityAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.util.TextRange
+import com.intellij.psi.codeStyle.CodeStyleManager
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithVisibility
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -26,10 +27,7 @@ import org.jetbrains.kotlin.idea.core.*
 import org.jetbrains.kotlin.lexer.KtModifierKeywordToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.startOffset
-import org.jetbrains.kotlin.psi.psiUtil.toVisibility
-import org.jetbrains.kotlin.psi.psiUtil.visibilityModifier
-import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierType
+import org.jetbrains.kotlin.psi.psiUtil.*
 
 open class ChangeVisibilityModifierIntention protected constructor(
     val modifier: KtModifierKeywordToken
@@ -102,7 +100,17 @@ open class ChangeVisibilityModifierIntention protected constructor(
         }
     }
 
-    class Public : ChangeVisibilityModifierIntention(KtTokens.PUBLIC_KEYWORD), HighPriorityAction
+    class Public : ChangeVisibilityModifierIntention(KtTokens.PUBLIC_KEYWORD), HighPriorityAction {
+        override fun applyTo(element: KtDeclaration, editor: Editor?) {
+            super.applyTo(element, editor)
+            if (element is KtPrimaryConstructor) {
+                val prev = element.getPrevSiblingIgnoringWhitespace()
+                if (prev != null) {
+                    CodeStyleManager.getInstance(element.project).reformatRange(element.parent, prev.endOffset, element.startOffset)
+                }
+            }
+        }
+    }
 
     class Private : ChangeVisibilityModifierIntention(KtTokens.PRIVATE_KEYWORD), HighPriorityAction {
         override fun applicabilityRange(element: KtDeclaration): TextRange? {
