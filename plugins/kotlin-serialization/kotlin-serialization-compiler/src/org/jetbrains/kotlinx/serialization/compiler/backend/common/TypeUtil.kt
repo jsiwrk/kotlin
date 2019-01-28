@@ -104,7 +104,7 @@ fun AbstractSerialGenerator.findTypeSerializerOrContext(
             null
     return getContextualSerializer() ?: findTypeSerializer(module, kType) ?: throw CompilationException(
         "Serializer for element of type $kType has not been found.\n" +
-                "To use context serializer as fallback, explicitly annotate element with @ContextualSerializer",
+                "To use context serializer as fallback, explicitly annotate element with @ContextualSerialization",
         null,
         sourceElement
     )
@@ -142,6 +142,21 @@ fun findStandardKotlinTypeSerializer(module: ModuleDescriptor, kType: KotlinType
         "kotlin.collections.Map", "kotlin.collections.LinkedHashMap", "kotlin.collections.MutableMap" -> "LinkedHashMapSerializer"
         "kotlin.collections.HashMap" -> "HashMapSerializer"
         "kotlin.collections.Map.Entry" -> "MapEntrySerializer"
+        "java.lang.Boolean" -> "BooleanSerializer"
+        "java.lang.Byte" -> "ByteSerializer"
+        "java.lang.Short" -> "ShortSerializer"
+        "java.lang.Integer" -> "IntSerializer"
+        "java.lang.Long" -> "LongSerializer"
+        "java.lang.Float" -> "FloatSerializer"
+        "java.lang.Double" -> "DoubleSerializer"
+        "java.lang.Character" -> "CharSerializer"
+        "java.lang.String" -> "StringSerializer"
+        "java.util.Collection", "java.util.List", "java.util.ArrayList" -> "ArrayListSerializer"
+        "java.util.Set", "java.util.LinkedHashSet" -> "LinkedHashSetSerializer"
+        "java.util.HashSet" -> "HashSetSerializer"
+        "java.util.Map", "java.util.LinkedHashMap" -> "LinkedHashMapSerializer"
+        "java.util.HashMap" -> "HashMapSerializer"
+        "java.util.Map.Entry" -> "MapEntrySerializer"
         else -> return null
     }
     return module.findClassAcrossModuleDependencies(ClassId(internalPackageFqName, Name.identifier(name)))
