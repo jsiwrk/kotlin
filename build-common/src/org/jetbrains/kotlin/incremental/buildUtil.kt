@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.modules.TargetId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
 import org.jetbrains.kotlin.synthetic.SAM_LOOKUP_NAME
+import org.jetbrains.kotlin.utils.addToStdlib.flattenTo
 import java.io.File
 import java.util.*
 
@@ -135,16 +136,7 @@ fun ChangesCollector.getDirtyData(
         if (change is ChangeInfo.SignatureChanged) {
             val fqNames = if (!change.areSubclassesAffected) listOf(change.fqName) else withSubtypes(change.fqName, caches)
             dirtyClassesFqNames.addAll(fqNames)
-
-            for (classFqName in fqNames) {
-                assert(!classFqName.isRoot) { "$classFqName is root when processing $change" }
-
-                val scope = classFqName.parent().asString()
-                val name = classFqName.shortName().identifier
-                dirtyLookupSymbols.add(LookupSymbol(name, scope))
-            }
-        }
-        else if (change is ChangeInfo.MembersChanged) {
+        } else if (change is ChangeInfo.MembersChanged) {
             val fqNames = withSubtypes(change.fqName, caches)
             // need to recompile subtypes because changed member might break override
             dirtyClassesFqNames.addAll(fqNames)
@@ -160,42 +152,56 @@ fun ChangesCollector.getDirtyData(
     return DirtyData(dirtyLookupSymbols, dirtyClassesFqNames)
 }
 
-fun mapLookupSymbolsToFiles(
-        lookupStorage: LookupStorage,
-        lookupSymbols: Iterable<LookupSymbol>,
-        reporter: ICReporter,
-        excludes: Set<File> = emptySet()
+fun mapMemberNamesToAffectedFiles(
+    lookupStorage: LookupStorage,
+    lookupSymbols: Iterable<LookupSymbol>,
+    reporter: ICReporter,
+    excludes: Set<File> = emptySet()
 ): Set<File> {
     val dirtyFiles = HashSet<File>()
 
     for (lookup in lookupSymbols) {
         val affectedFiles = lookupStorage.get(lookup).map(::File).filter { it !in excludes }
-        reporter.report { "${lookup.scope}#${lookup.name} caused recompilation of: ${reporter.pathsAsString(affectedFiles)}" }
+        reporter.reportMarkDirtyMember(affectedFiles, scope = lookup.scope, name = lookup.name)
         dirtyFiles.addAll(affectedFiles)
     }
 
     return dirtyFiles
 }
 
-fun mapClassesFqNamesToFiles(
+fun mapClassesFqNamesToAffectedFiles(
+    lookupStorage: LookupStorage,
     caches: Iterable<IncrementalCacheCommon>,
     classesFqNames: Iterable<FqName>,
     reporter: ICReporter,
     excludes: Set<File> = emptySet()
 ): Set<File> {
-    val dirtyFiles = HashSet<File>()
+    val fqNameToAffectedFiles = HashMap<FqName, MutableSet<File>>()
+
+    for (classFqName in classesFqNames) {
+        val scope = classFqName.parent().asString()
+        val name = classFqName.shortName().identifier
+        val lookup = LookupSymbol(name, scope)
+        val affectedFiles = lookupStorage.get(lookup).map(::File).filter { it !in excludes }
+
+        fqNameToAffectedFiles[classFqName] = affectedFiles.toMutableSet()
+    }
 
     for (cache in caches) {
-        for (dirtyClassFqName in classesFqNames) {
-            val srcFile = cache.getSourceFileIfClass(dirtyClassFqName)
+        for (classFqName in classesFqNames) {
+            val srcFile = cache.getSourceFileIfClass(classFqName)
             if (srcFile == null || srcFile in excludes || srcFile.isJavaFile()) continue
 
-            reporter.report { "Class $dirtyClassFqName caused recompilation of: ${reporter.pathsAsString(srcFile)}" }
-            dirtyFiles.add(srcFile)
+            fqNameToAffectedFiles[classFqName]!!.add(srcFile)
         }
     }
 
-    return dirtyFiles
+    for ((classFqName, affectedFiles) in fqNameToAffectedFiles) {
+        reporter.reportMarkDirtyClass(affectedFiles, classFqName.asString())
+    }
+
+
+    return fqNameToAffectedFiles.values.flattenTo(HashSet())
 }
 
 fun withSubtypes(

@@ -47,7 +47,6 @@ import org.jetbrains.kotlin.jps.incremental.withLookupStorage
 import org.jetbrains.kotlin.jps.model.kotlinKind
 import org.jetbrains.kotlin.jps.targets.KotlinJvmModuleBuildTarget
 import org.jetbrains.kotlin.jps.targets.KotlinModuleBuildTarget
-import org.jetbrains.kotlin.jps.targets.KotlinUnsupportedModuleBuildTarget
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.preloading.ClassCondition
 import org.jetbrains.kotlin.utils.KotlinPaths
@@ -690,10 +689,10 @@ private fun ChangesCollector.getDirtyFiles(
 ): Set<File> {
     val reporter = JpsICReporter()
     val (dirtyLookupSymbols, dirtyClassFqNames) = getDirtyData(caches, reporter)
-    val dirtyFilesFromLookups = dataManager.withLookupStorage {
-        mapLookupSymbolsToFiles(it, dirtyLookupSymbols, reporter)
+    return dataManager.withLookupStorage { lookupStorage ->
+        mapMemberNamesToAffectedFiles(lookupStorage, dirtyLookupSymbols, reporter) +
+                mapClassesFqNamesToAffectedFiles(lookupStorage, caches, dirtyClassFqNames, reporter)
     }
-    return dirtyFilesFromLookups + mapClassesFqNamesToFiles(caches, dirtyClassFqNames, reporter)
 }
 
 private fun getLookupTracker(project: JpsProject, representativeTarget: KotlinModuleBuildTarget<*>): LookupTracker {

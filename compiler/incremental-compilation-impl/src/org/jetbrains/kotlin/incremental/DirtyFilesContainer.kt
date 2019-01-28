@@ -18,18 +18,22 @@ class DirtyFilesContainer(
     fun toMutableList(): MutableList<File> =
         ArrayList(myDirtyFiles)
 
-    fun add(files: Iterable<File>) {
+    fun add(files: Iterable<File>, reason: String?) {
         val existingKotlinFiles = files.filter { it.isKotlinFile(sourceFilesExtensions) }
         if (existingKotlinFiles.isNotEmpty()) {
             myDirtyFiles.addAll(existingKotlinFiles)
+            if (reason != null) {
+                reporter.reportMarkDirty(existingKotlinFiles, reason)
+            }
         }
     }
 
     fun addByDirtySymbols(lookupSymbols: Collection<LookupSymbol>) {
         if (lookupSymbols.isEmpty()) return
 
-        val dirtyFilesFromLookups = mapLookupSymbolsToFiles(caches.lookupCache, lookupSymbols, reporter)
-        add(dirtyFilesFromLookups)
+        val dirtyFilesFromLookups = mapMemberNamesToAffectedFiles(caches.lookupCache, lookupSymbols, reporter)
+        // reason is null, because files are reported in mapMemberNamesToAffectedFiles
+        add(dirtyFilesFromLookups, reason = null)
     }
 
     fun addByDirtyClasses(dirtyClassesFqNames: Collection<FqName>) {
@@ -42,7 +46,8 @@ class DirtyFilesContainer(
             )
         }
         val dirtyFilesFromFqNames =
-            mapClassesFqNamesToFiles(listOf(caches.platformCache), fqNamesWithSubtypes, reporter)
-        add(dirtyFilesFromFqNames)
+            mapClassesFqNamesToAffectedFiles(caches.lookupCache, listOf(caches.platformCache), fqNamesWithSubtypes, reporter)
+        // reason is null, because files are reported in mapClassesFqNamesToAffectedFiles
+        add(dirtyFilesFromFqNames, reason = null)
     }
 }
