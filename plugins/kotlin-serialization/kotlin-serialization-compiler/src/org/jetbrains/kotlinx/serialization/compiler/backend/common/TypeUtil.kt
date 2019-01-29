@@ -32,10 +32,7 @@ import org.jetbrains.kotlin.psi.KtPureClassOrObject
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.typeUtil.containsTypeProjectionsInTopLevelArguments
-import org.jetbrains.kotlin.types.typeUtil.isBoolean
-import org.jetbrains.kotlin.types.typeUtil.isPrimitiveNumberType
-import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
+import org.jetbrains.kotlin.types.typeUtil.*
 import org.jetbrains.kotlinx.serialization.compiler.backend.jvm.enumSerializerId
 import org.jetbrains.kotlinx.serialization.compiler.backend.jvm.polymorphicSerializerId
 import org.jetbrains.kotlinx.serialization.compiler.backend.jvm.referenceArraySerializerId
@@ -95,8 +92,9 @@ fun AbstractSerialGenerator.findTypeSerializerOrContext(
     annotations: Annotations = kType.annotations,
     sourceElement: PsiElement? = null
 ): ClassDescriptor? {
-    additionalSerializersInScopeOfCurrentFile[kType]?.let { return it }
     if (kType.isTypeParameter()) return null
+    if (kType.isMarkedNullable) return findTypeSerializerOrContext(module, kType.makeNotNullable(), annotations, sourceElement)
+    additionalSerializersInScopeOfCurrentFile[kType]?.let { return it }
     fun getContextualSerializer() =
         if (annotations.hasAnnotation(SerializationAnnotations.contextualFqName) || kType in contextualKClassListInCurrentFile)
             module.getClassFromSerializationPackage(SpecialBuiltins.contextSerializer)
