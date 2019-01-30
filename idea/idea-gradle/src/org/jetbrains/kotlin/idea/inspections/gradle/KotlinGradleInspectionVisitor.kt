@@ -67,7 +67,7 @@ private val KOTLIN_PLUGIN_PATH_MARKER = "${KotlinWithGradleConfigurator.GROUP_ID
 private val KOTLIN_PLUGIN_PATH_MARKER_FOR_MAVEN_LOCAL_REPO =
     "${KotlinWithGradleConfigurator.GROUP_ID.replace('.', '/')}/${KotlinWithGradleConfigurator.GRADLE_PLUGIN_ID}/"
 
-internal fun findKotlinPluginVersion(classpathData: BuildScriptClasspathData): String? {
+fun findKotlinPluginVersion(classpathData: BuildScriptClasspathData): String? {
     for (classPathEntry in classpathData.classpathEntries.asReversed()) {
         for (path in classPathEntry.classesFile) {
             val uniformedPath = path.replace('\\', '/')

@@ -23,11 +23,38 @@ dependencies {
     compileOnly(intellijPluginDep("gradle"))
     compileOnly(intellijPluginDep("Groovy"))
     compileOnly(intellijPluginDep("junit"))
+
+    testCompile(projectTests(":idea"))
+    testCompile(projectTests(":idea:idea-gradle"))
+    testCompile(projectTests(":idea:idea-test-framework"))
+
+    testCompile(intellijPluginDep("gradle"))
+    testCompileOnly(intellijPluginDep("Groovy"))
+    testCompileOnly(intellijDep())
+
+    testRuntime(project(":plugins:kapt3-idea"))
+    testRuntime(project(":sam-with-receiver-ide-plugin"))
+    testRuntime(project(":allopen-ide-plugin"))
+    testRuntime(project(":noarg-ide-plugin"))
+    testRuntime(project(":kotlin-scripting-idea"))
+    testRuntime(project(":kotlinx-serialization-ide-plugin"))
+
+    // TODO: the order of the plugins matters here, consider avoiding order-dependency
+    testRuntime(intellijPluginDep("junit"))
+    testRuntime(intellijPluginDep("gradle"))
+    testRuntime(intellijPluginDep("Groovy"))
+
 }
 
 sourceSets {
     "main" { projectDefault() }
-    "test" { none() }
+    "test" { projectDefault() }
+}
+
+testsJar()
+
+projectTest {
+    workingDir = rootDir
 }
 
 configureInstrumentation()
