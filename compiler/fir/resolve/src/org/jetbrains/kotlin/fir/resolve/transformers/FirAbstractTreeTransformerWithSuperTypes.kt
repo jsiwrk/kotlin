@@ -34,10 +34,14 @@ abstract class FirAbstractTreeTransformerWithSuperTypes(reversedScopePriority: B
         return result
     }
 
-    protected fun lookupSuperTypes(klass: FirRegularClass, lookupInterfaces: Boolean): List<ConeClassLikeType> {
-        val useSiteSession = klass.session
+    protected fun lookupSuperTypes(
+        klass: FirRegularClass,
+        lookupInterfaces: Boolean,
+        deep: Boolean,
+        useSiteSession: FirSession = klass.session
+    ): List<ConeClassLikeType> {
         return mutableListOf<ConeClassLikeType>().also {
-            if (lookupInterfaces) klass.symbol.collectSuperTypes(useSiteSession, it)
+            if (lookupInterfaces) klass.symbol.collectSuperTypes(useSiteSession, it, deep)
             else klass.symbol.collectSuperClasses(useSiteSession, it)
         }
     }
@@ -89,21 +93,22 @@ abstract class FirAbstractTreeTransformerWithSuperTypes(reversedScopePriority: B
         }
     }
 
-    private fun ConeClassLikeSymbol.collectSuperTypes(useSiteSession: FirSession, list: MutableList<ConeClassLikeType>) {
+    private fun ConeClassLikeSymbol.collectSuperTypes(useSiteSession: FirSession, list: MutableList<ConeClassLikeType>, deep: Boolean) {
         when (this) {
             is ConeClassSymbol -> {
                 val superClassTypes =
                     this.superTypes.mapNotNull { it.projection(useSiteSession).computePartialExpansion() }
                 list += superClassTypes
-                superClassTypes.forEach {
-                    if (it !is ConeClassErrorType) {
-                        it.symbol.collectSuperTypes(useSiteSession, list)
+                if (deep)
+                    superClassTypes.forEach {
+                        if (it !is ConeClassErrorType) {
+                            it.symbol.collectSuperTypes(useSiteSession, list, deep)
+                        }
                     }
-                }
             }
             is ConeTypeAliasSymbol -> {
                 val expansion = expansionType?.projection(useSiteSession)?.computePartialExpansion() ?: return
-                expansion.symbol.collectSuperTypes(useSiteSession, list)
+                expansion.symbol.collectSuperTypes(useSiteSession, list, deep)
             }
             else -> error("?!id:1")
         }
