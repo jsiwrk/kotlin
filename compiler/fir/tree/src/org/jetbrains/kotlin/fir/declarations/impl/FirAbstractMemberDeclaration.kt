@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.declarations.FirDeclarationStatus
 import org.jetbrains.kotlin.fir.declarations.FirMemberDeclaration
 import org.jetbrains.kotlin.fir.declarations.FirTypeParameter
 import org.jetbrains.kotlin.fir.transformInplace
@@ -20,22 +21,30 @@ import org.jetbrains.kotlin.name.Name
 abstract class FirAbstractMemberDeclaration(
     session: FirSession,
     psi: PsiElement?,
-    name: Name,
-    visibility: Visibility,
-    modality: Modality?,
-    isExpect: Boolean,
-    isActual: Boolean
+    name: Name
 ) : FirAbstractNamedAnnotatedDeclaration(session, psi, name), FirMemberDeclaration {
-    final override val typeParameters = mutableListOf<FirTypeParameter>()
-
-    final override var status = FirDeclarationStatusImpl(
-        session,
-        visibility,
-        modality
-    ).apply {
-        this.isExpect = isExpect
-        this.isActual = isActual
+    constructor(
+        session: FirSession,
+        psi: PsiElement?,
+        name: Name,
+        visibility: Visibility,
+        modality: Modality?,
+        isExpect: Boolean,
+        isActual: Boolean
+    ) : this(session, psi, name) {
+        this.status = FirDeclarationStatusImpl(
+            session,
+            visibility,
+            modality
+        ).apply {
+            this.isExpect = isExpect
+            this.isActual = isActual
+        }
     }
+
+    final override val typeParameters: MutableList<FirTypeParameter> = mutableListOf<FirTypeParameter>()
+
+    final override lateinit var status: FirDeclarationStatusImpl
 
     override fun <D> transformChildren(transformer: FirTransformer<D>, data: D): FirElement {
         typeParameters.transformInplace(transformer, data)
