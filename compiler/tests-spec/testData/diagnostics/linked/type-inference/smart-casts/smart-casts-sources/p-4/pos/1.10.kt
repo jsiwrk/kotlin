@@ -338,14 +338,13 @@ fun case_24(y: Int) {
 
 /*
  * TESTCASE NUMBER: 25
- * UNEXPECTED BEHAVIOUR
  * ISSUES: KT-29054
  */
 fun <A, B : Out<A>, C: Out<B>, D: Out<C>, E: Out<D>, F> case_25(x: F, y: Out<C>) where F : Out<E?> =
     select(x.get()?.get()?.get()?.get()?.get(), y.get().get().get())
 
 fun case_25(y: Int) {
-    val x = case_25(Out(Out(<!TYPE_MISMATCH, TYPE_MISMATCH!>Out(Out(Out(y)))<!>)), Out(Out(Out(y))))
+    val x = case_25(Out(Out(Out(Out(Out(y))))), Out(Out(Out(y))))
 
     if (x != null) {
         <!DEBUG_INFO_EXPRESSION_TYPE("kotlin.Int & kotlin.Int?")!>x<!>
@@ -355,14 +354,13 @@ fun case_25(y: Int) {
 
 /*
  * TESTCASE NUMBER: 26
- * UNEXPECTED BEHAVIOUR
  * ISSUES: KT-29054
  */
 fun <A, B : Out<A>, C: Out<B>, D: Out<C>, E: Out<D>, F> case_26(x: F, y: Out<C>) where F : Out<E?> =
     select(x.get()?.get()?.get()?.get()?.get(), y.get().get().get())
 
 fun case_26(y: Int) {
-    val x = case_26(Out(Out(<!TYPE_MISMATCH, TYPE_MISMATCH!>Out(Out(Out(y)))<!>)), Out(Out(Out(y))))
+    val x = case_26(Out(Out(Out(Out(Out(y))))), Out(Out(Out(y))))
 
     if (x != null) {
         <!DEBUG_INFO_EXPRESSION_TYPE("kotlin.Int & kotlin.Int?")!>x<!>
