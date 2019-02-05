@@ -55,13 +55,13 @@ class ConstAndJvmFieldPropertiesLowering(val context: CommonBackendContext) : Ir
 
     private fun substituteSetter(irProperty: IrProperty, expression: IrCall): IrExpression {
         val backingField = irProperty.backingField!!
-        val receiver = expression.dispatchReceiver?.let { super.visitExpression(it) }
+        val receiver = expression.dispatchReceiver?.transform(this, null)
         val setExpr = IrSetFieldImpl(
             expression.startOffset,
             expression.endOffset,
             backingField.symbol,
             receiver,
-            super.visitExpression(expression.getValueArgument(expression.valueArgumentsCount - 1)!!),
+            expression.getValueArgument(expression.valueArgumentsCount - 1)!!.transform(this, null),
             expression.type,
             expression.origin,
             expression.superQualifierSymbol
@@ -71,7 +71,7 @@ class ConstAndJvmFieldPropertiesLowering(val context: CommonBackendContext) : Ir
 
     private fun substituteGetter(irProperty: IrProperty, expression: IrCall): IrExpression {
         val backingField = irProperty.backingField!!
-        val receiver = expression.dispatchReceiver?.let { super.visitExpression(it) }
+        val receiver = expression.dispatchReceiver?.transform(this, null)
         val getExpr = IrGetFieldImpl(
             expression.startOffset,
             expression.endOffset,
