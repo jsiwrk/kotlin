@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.fir.scopes.ProcessorAction.NEXT
 import org.jetbrains.kotlin.fir.scopes.impl.*
 import org.jetbrains.kotlin.fir.symbols.ConeCallableSymbol
 import org.jetbrains.kotlin.fir.symbols.ConeTypeParameterSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FictitiousFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeClassErrorType
 import org.jetbrains.kotlin.fir.types.ConeClassLikeType
@@ -53,10 +52,10 @@ class FirAccessResolveTransformer : FirAbstractTreeTransformerWithSuperTypes(rev
     }
 
     private fun FirRegularClass.buildUseSiteScope(useSiteSession: FirSession = session): FirClassUseSiteScope {
-        val newTower = FirCompositeScope(mutableListOf())
+        val superTypeScope = FirCompositeScope(mutableListOf())
         val declaredScope = FirClassDeclaredMemberScope(this, useSiteSession)
         lookupSuperTypes(this, lookupInterfaces = true, deep = false, useSiteSession = useSiteSession)
-            .mapNotNullTo(newTower.scopes) { useSiteSuperType ->
+            .mapNotNullTo(superTypeScope.scopes) { useSiteSuperType ->
                 if (useSiteSuperType is ConeClassErrorType) return@mapNotNullTo null
                 val symbol = useSiteSuperType.symbol
                 if (symbol is FirClassSymbol) {
@@ -66,7 +65,7 @@ class FirAccessResolveTransformer : FirAbstractTreeTransformerWithSuperTypes(rev
                     null
                 }
             }
-        return FirClassUseSiteScope(useSiteSession, newTower, declaredScope, true)
+        return FirClassUseSiteScope(useSiteSession, superTypeScope, declaredScope, true)
     }
 
     override fun transformRegularClass(regularClass: FirRegularClass, data: Nothing?): CompositeTransformResult<FirDeclaration> {
