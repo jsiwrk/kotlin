@@ -34,6 +34,11 @@ public class FirMultiModuleResolveTestGenerated extends AbstractFirMultiModuleRe
         runTest("idea/testData/fir/multiModule/basic/");
     }
 
+    @TestMetadata("basicWithJava")
+    public void testBasicWithJava() throws Exception {
+        runTest("idea/testData/fir/multiModule/basicWithJava/");
+    }
+
     @TestMetadata("mppFakeOverrides")
     public void testMppFakeOverrides() throws Exception {
         runTest("idea/testData/fir/multiModule/mppFakeOverrides/");

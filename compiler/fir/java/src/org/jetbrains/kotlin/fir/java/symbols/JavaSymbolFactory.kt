@@ -12,13 +12,14 @@ import org.jetbrains.kotlin.fir.declarations.impl.FirClassImpl
 import org.jetbrains.kotlin.fir.declarations.impl.FirTypeParameterImpl
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.FirExpression
-import org.jetbrains.kotlin.fir.expressions.impl.FirAnnotationCallImpl
-import org.jetbrains.kotlin.fir.expressions.impl.FirArrayOfCallImpl
-import org.jetbrains.kotlin.fir.expressions.impl.FirConstExpressionImpl
-import org.jetbrains.kotlin.fir.expressions.impl.FirGetClassCallImpl
+import org.jetbrains.kotlin.fir.expressions.impl.*
+import org.jetbrains.kotlin.fir.java.FirJavaType
+import org.jetbrains.kotlin.fir.resolve.FirSymbolProvider
+import org.jetbrains.kotlin.fir.service
 import org.jetbrains.kotlin.fir.symbols.ConeClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirTypeParameterSymbol
+import org.jetbrains.kotlin.fir.types.FirResolvedType
 import org.jetbrains.kotlin.fir.types.FirType
 import org.jetbrains.kotlin.fir.types.impl.ConeClassTypeImpl
 import org.jetbrains.kotlin.fir.types.impl.FirResolvedTypeImpl
@@ -44,8 +45,19 @@ class JavaSymbolFactory(val session: FirSession) {
             else -> ClassKind.CLASS
         }
 
-    private fun JavaType.toFirType(): FirType {
+    private fun JavaClassifierType.superTypeToFirType(): FirResolvedType {
+        val javaClass = classifier as JavaClass
 
+        val symbol = session.service<FirSymbolProvider>().getSymbolByFqName(javaClass.classId!!) as ConeClassSymbol
+        require(this.typeArguments.isEmpty()) { TODO("Type arguments for java classes") }
+        return FirResolvedTypeImpl(session, null, ConeClassTypeImpl(symbol, emptyArray()), false, emptyList())
+    }
+
+    private fun JavaType.toFirType(): FirType {
+        return FirJavaType(session, null, this).also {
+            if (this is JavaClassifierType)
+                it.addAnnotationsFrom(this)
+        }
     }
 
     private fun JavaAnnotation.toFirAnnotationCall(): FirAnnotationCall {
@@ -101,15 +113,19 @@ class JavaSymbolFactory(val session: FirSession) {
             for (typeParameter in javaClass.typeParameters) {
                 typeParameters += createTypeParameterSymbol(typeParameter.name).fir
             }
-            for (annotation in javaClass.annotations) {
-                annotations += annotation.toFirAnnotationCall()
-            }
+            addAnnotationsFrom(javaClass)
             for (supertype in javaClass.supertypes) {
-                superTypes += supertype.toFirType()
+                superTypes += supertype.superTypeToFirType()
             }
             // TODO: declarations (probably should be done later)
         }
         return firSymbol
+    }
+
+    private fun FirAbstractAnnotatedElement.addAnnotationsFrom(javaClass: JavaAnnotationOwner) {
+        for (annotation in javaClass.annotations) {
+            annotations += annotation.toFirAnnotationCall()
+        }
     }
 
     private fun createTypeParameterSymbol(name: Name): FirTypeParameterSymbol {

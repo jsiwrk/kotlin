@@ -39,6 +39,7 @@ class FirClassUseSiteScope(
 
     fun isSubtypeOf(subType: ConeKotlinType, superType: ConeKotlinType) = true
     fun isSubtypeOf(subType: FirType, superType: FirType) =
+        //TODO: Discuss
         isSubtypeOf(subType.cast<FirResolvedType>().type, superType.cast<FirResolvedType>().type)
 
     fun isEqualTypes(a: ConeKotlinType, b: ConeKotlinType) = true

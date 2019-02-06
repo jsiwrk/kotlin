@@ -64,11 +64,11 @@ open class FirTypeResolveTransformer(
             val classId = regularClass.symbol.classId
             lookupSuperTypes(regularClass, lookupInterfaces = false, deep = true).asReversed().mapTo(towerScope.scopes) {
                 val symbol = it.symbol
-                if (symbol is FirBasedSymbol<*>) {
-                    FirNestedClassifierScope(symbol.classId, FirProvider.getInstance(symbol.fir.session))
-                } else {
+//                if (symbol is FirBasedSymbol<*>) {
+//                    FirNestedClassifierScope(symbol.classId, FirProvider.getInstance(symbol.fir.session))
+//                } else {
                     FirNestedClassifierScope(symbol.classId, FirSymbolProvider.getInstance(regularClass.session))
-                }
+//                }
             }
             val companionObjects = regularClass.declarations.filterIsInstance<FirRegularClass>().filter { it.isCompanion }
             for (companionObject in companionObjects) {
@@ -180,6 +180,15 @@ open class FirTypeResolveTransformer(
                 if (symbol is FirBasedSymbol<*>) {
                     val classId = symbol.classId
                     val firProvider = FirProvider.getInstance(symbol.fir.session)
+
+                    if (symbol is ConeTypeAliasSymbol) {
+                        val fir = symbol.fir as FirTypeAlias
+                        if (fir.expandedType is FirResolvedType) return
+                    } else if (symbol is ConeClassSymbol) {
+                        val fir = symbol.fir as FirClass
+                        if (fir.superTypes.all { it is FirResolvedType }) return
+                    }
+
 
                     val classes = generateSequence(classId) { it.outerClassId }.toList().asReversed()
 
