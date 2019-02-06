@@ -7,7 +7,8 @@ package org.jetbrains.kotlin.fir.java
 
 import com.intellij.openapi.project.Project
 import com.intellij.psi.search.GlobalSearchScope
-import org.jetbrains.kotlin.fir.java.symbols.JavaClassSymbol
+import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.java.symbols.JavaSymbolFactory
 import org.jetbrains.kotlin.fir.resolve.AbstractFirSymbolProvider
 import org.jetbrains.kotlin.fir.symbols.CallableId
 import org.jetbrains.kotlin.fir.symbols.ConeSymbol
@@ -17,9 +18,12 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.jvm.KotlinJavaPsiFacade
 
 class JavaSymbolProvider(
+    session: FirSession,
     val project: Project,
     private val searchScope: GlobalSearchScope
 ) : AbstractFirSymbolProvider() {
+    private val factory = JavaSymbolFactory(session)
+
     override fun getCallableSymbols(callableId: CallableId): List<ConeSymbol> {
         // TODO
         return emptyList()
@@ -29,7 +33,7 @@ class JavaSymbolProvider(
         return classCache.lookupCacheOrCalculate(classId) {
             val facade = KotlinJavaPsiFacade.getInstance(project)
             val foundClass = facade.findClass(JavaClassFinder.Request(classId), searchScope)
-            foundClass?.let { javaClass -> JavaClassSymbol(javaClass) }
+            foundClass?.let { javaClass -> factory.createClassSymbol(javaClass) }
         }
     }
 
